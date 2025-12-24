@@ -28,6 +28,7 @@
 #define ID_STATIC_CAPS    108
 #define ID_STATIC_STATUS  109
 #define ID_LIST_LOG       110
+#define ID_BTN_CREATE_TEST 111
 
 /* Global state */
 static HWND g_hMainWnd = NULL;
@@ -44,10 +45,16 @@ static bool g_picking = false;
 /* Forward declarations */
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK PickerProc(int, WPARAM, LPARAM);
+LRESULT CALLBACK BackgroundWndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK TestWndProc(HWND, UINT, WPARAM, LPARAM);
 void AddLogMessage(const char* format, ...);
 void UpdateStatus(const char* status);
 void UpdateTargetInfo();
+void CreateTestWindows();
+void DestroyTestWindows();
 HHOOK g_hMouseHook = NULL;
+HWND g_hBackgroundWnd = NULL;
+HWND g_hTestWnd = NULL;
 
 /* Log callback */
 void BLUR_CALL LogCallback(int32_t level, const char* msg, void* user_data) {
@@ -130,6 +137,9 @@ void CreateControls(HWND hWnd) {
     CreateWindowW(L"BUTTON", L"Pick Window (Click)",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         10, y, 150, 30, hWnd, (HMENU)ID_BTN_PICK, hInst, NULL);
+    CreateWindowW(L"BUTTON", L"Create Test Windows",
+        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        170, y, 160, 30, hWnd, (HMENU)ID_BTN_CREATE_TEST, hInst, NULL);
     y += 40;
 
     /* Intensity slider */
@@ -329,6 +339,168 @@ void UpdateStatus(const char* status) {
     SetWindowTextA(g_hStaticStatus, status);
 }
 
+/* Background window proc - draws colorful pattern */
+LRESULT CALLBACK BackgroundWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            
+            /* Draw colorful checkerboard pattern */
+            int cellSize = 40;
+            COLORREF colors[] = {
+                RGB(255, 0, 0),     /* Red */
+                RGB(0, 255, 0),     /* Green */
+                RGB(0, 0, 255),     /* Blue */
+                RGB(255, 255, 0),   /* Yellow */
+                RGB(255, 0, 255),   /* Magenta */
+                RGB(0, 255, 255),   /* Cyan */
+                RGB(255, 128, 0),   /* Orange */
+                RGB(128, 0, 255),   /* Purple */
+            };
+            int numColors = sizeof(colors) / sizeof(colors[0]);
+            
+            for (int y = 0; y < rc.bottom; y += cellSize) {
+                for (int x = 0; x < rc.right; x += cellSize) {
+                    int colorIdx = ((x / cellSize) + (y / cellSize)) % numColors;
+                    HBRUSH hBrush = CreateSolidBrush(colors[colorIdx]);
+                    RECT cellRc = {x, y, x + cellSize, y + cellSize};
+                    FillRect(hdc, &cellRc, hBrush);
+                    DeleteObject(hBrush);
+                }
+            }
+            
+            EndPaint(hWnd, &ps);
+            return 0;
+        }
+        case WM_DESTROY:
+            g_hBackgroundWnd = NULL;
+            return 0;
+    }
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+/* Test window proc - transparent window for blur */
+LRESULT CALLBACK TestWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            
+            /* Draw semi-transparent background with text */
+            SetBkMode(hdc, TRANSPARENT);
+            SetTextColor(hdc, RGB(255, 255, 255));
+            
+            const char* text = "Blur Test Window\n\nLook at the pattern behind!";
+            DrawTextA(hdc, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
+            
+            EndPaint(hWnd, &ps);
+            return 0;
+        }
+        case WM_DESTROY:
+            g_hTestWnd = NULL;
+            return 0;
+    }
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+void DestroyTestWindows() {
+    if (g_hTestWnd && IsWindow(g_hTestWnd)) {
+        DestroyWindow(g_hTestWnd);
+        g_hTestWnd = NULL;
+    }
+    if (g_hBackgroundWnd && IsWindow(g_hBackgroundWnd)) {
+        DestroyWindow(g_hBackgroundWnd);
+        g_hBackgroundWnd = NULL;
+    }
+}
+
+void CreateTestWindows() {
+    DestroyTestWindows();
+    
+    HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(g_hMainWnd, GWLP_HINSTANCE);
+    
+    /* Register background window class */
+    static bool bgClassRegistered = false;
+    if (!bgClassRegistered) {
+        WNDCLASSEXW wc = {};
+        wc.cbSize = sizeof(wc);
+        wc.lpfnWndProc = BackgroundWndProc;
+        wc.hInstance = hInst;
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.lpszClassName = L"BlurBackgroundClass";
+        RegisterClassExW(&wc);
+        bgClassRegistered = true;
+    }
+    
+    /* Register test window class */
+    static bool testClassRegistered = false;
+    if (!testClassRegistered) {
+        WNDCLASSEXW wc = {};
+        wc.cbSize = sizeof(wc);
+        wc.lpfnWndProc = TestWndProc;
+        wc.hInstance = hInst;
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        wc.lpszClassName = L"BlurTestClass";
+        RegisterClassExW(&wc);
+        testClassRegistered = true;
+    }
+    
+    /* Get screen center */
+    int screenW = GetSystemMetrics(SM_CXSCREEN);
+    int screenH = GetSystemMetrics(SM_CYSCREEN);
+    int winW = 400;
+    int winH = 300;
+    int posX = (screenW - winW) / 2;
+    int posY = (screenH - winH) / 2;
+    
+    /* Create background window */
+    g_hBackgroundWnd = CreateWindowExW(
+        WS_EX_TOOLWINDOW,
+        L"BlurBackgroundClass",
+        L"Background (Colorful Pattern)",
+        WS_POPUP | WS_VISIBLE | WS_CAPTION,
+        posX, posY, winW, winH,
+        NULL, NULL, hInst, NULL
+    );
+    
+    /* Create test window on top of background */
+    g_hTestWnd = CreateWindowExW(
+        WS_EX_TOOLWINDOW,
+        L"BlurTestClass",
+        L"Blur Test Window",
+        WS_POPUP | WS_VISIBLE | WS_CAPTION,
+        posX + 50, posY + 50, winW - 100, winH - 100,
+        NULL, NULL, hInst, NULL
+    );
+    
+    if (g_hTestWnd) {
+        /* Set as target */
+        g_hTargetWnd = g_hTestWnd;
+        UpdateTargetInfo();
+        
+        /* Apply blur with default params */
+        EffectParams params = {};
+        params.struct_version = 1;
+        params.intensity = 1.0f;
+        params.color_argb = 0x60000000;
+        
+        int32_t result = blur_apply_to_window((uintptr_t)g_hTestWnd, &params, 0);
+        if (result == BLUR_SUCCESS) {
+            AddLogMessage("Test windows created and blur applied");
+            UpdateStatus("Look at the background pattern through the blur window!");
+        } else {
+            AddLogMessage("Test windows created, blur failed");
+            UpdateStatus("Blur failed - check log");
+        }
+    }
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE:
@@ -350,10 +522,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 case ID_BTN_RESTORE:
                     RestoreAll();
                     break;
+                case ID_BTN_CREATE_TEST:
+                    CreateTestWindows();
+                    break;
             }
             return 0;
 
         case WM_DESTROY:
+            DestroyTestWindows();
             blur_shutdown();
             if (g_hMouseHook) {
                 UnhookWindowsHookEx(g_hMouseHook);
