@@ -1,0 +1,32 @@
+# Build outputs
+build/
+out/
+*.dll
+*.lib
+*.exp
+*.pdb
+*.obj
+*.exe
+
+# IDE / Editor
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Dependencies
+vcpkg_installed/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
