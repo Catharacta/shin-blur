@@ -58,6 +58,12 @@ int32_t BLUR_CALL blur_init(uint32_t* capabilities) {
     
     /* Initialize window state tracker */
     init_window_tracker();
+
+    /* Check Direct2D availability */
+    // We can just set the cap for now since we link to it
+    g_capabilities |= BLUR_CAP_D2D_BLUR;
+    LOG_INFO("Direct2D blur capability enabled");
+
     
     g_initialized.store(true);
     
@@ -139,7 +145,17 @@ int32_t BLUR_CALL blur_apply_to_window(
     
     int32_t result = BLUR_API_UNSUPPORTED;
     
-    /* Try SetWindowCompositionAttribute first */
+    /* Try Direct2D blur first (User preferred for Acrylic) */
+    if (g_capabilities & BLUR_CAP_D2D_BLUR) {
+        result = apply_d2d_blur(hwnd, effective_params);
+        if (result == BLUR_SUCCESS) {
+            track_window(hwnd, effective_params);
+            LOG_INFO("Blur applied via Direct2D");
+            return BLUR_SUCCESS;
+        }
+    }
+
+    /* Try SetWindowCompositionAttribute (Modern Win32) */
     if (g_capabilities & BLUR_CAP_SETWINDOWCOMPOSITION) {
         result = apply_composition_blur(hwnd, effective_params, g_pSetWindowCompositionAttribute);
         if (result == BLUR_SUCCESS) {
@@ -149,7 +165,7 @@ int32_t BLUR_CALL blur_apply_to_window(
         }
     }
     
-    /* Fallback to DWM blur-behind */
+    /* Fallback to DWM blur-behind (Legacy Win7/8) */
     if (g_capabilities & BLUR_CAP_DWM_BLUR) {
         result = apply_dwm_blur(hwnd, effective_params);
         if (result == BLUR_SUCCESS) {
@@ -158,6 +174,7 @@ int32_t BLUR_CALL blur_apply_to_window(
             return BLUR_SUCCESS;
         }
     }
+
     
     set_last_error("No blur method available or all methods failed");
     return result;
@@ -190,12 +207,18 @@ int32_t BLUR_CALL blur_clear_from_window(
     
     int32_t result = BLUR_SUCCESS;
     
-    /* Try to restore via SetWindowCompositionAttribute */
+    /* Try to restore via Direct2D */
+    if (g_capabilities & BLUR_CAP_D2D_BLUR) {
+        result = clear_d2d_blur(hwnd);
+    } 
+    
+    /* Fallback to other clearing methods */
     if (g_capabilities & BLUR_CAP_SETWINDOWCOMPOSITION) {
         result = clear_composition_blur(hwnd, g_pSetWindowCompositionAttribute);
     } else if (g_capabilities & BLUR_CAP_DWM_BLUR) {
         result = clear_dwm_blur(hwnd);
     }
+
     
     untrack_window(hwnd);
     

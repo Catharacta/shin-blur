@@ -34,6 +34,8 @@ extern "C" {
 #define BLUR_CAP_OVERLAY_FALLBACK      0x0004  /* Overlay fallback available */
 #define BLUR_CAP_COLOR_CONTROL         0x0008  /* Color tint control supported */
 #define BLUR_CAP_ANIMATION_CONTROL     0x0010  /* Animation control supported */
+#define BLUR_CAP_D2D_BLUR              0x0020  /* Direct2D Gaussian Blur supported */
+
 
 /* ============================================================================
  * Error Codes

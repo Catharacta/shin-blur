@@ -118,4 +118,11 @@ bool is_dwm_blur_available(void);
 int32_t apply_dwm_blur(HWND hwnd, const EffectParams* params);
 int32_t clear_dwm_blur(HWND hwnd);
 
+/* ============================================================================
+ * Direct2D Blur implementation (d2d_blur.cpp)
+ * ============================================================================ */
+int32_t apply_d2d_blur(HWND hwnd, const EffectParams* params);
+int32_t clear_d2d_blur(HWND hwnd);
+
+
 #endif /* BLUR_LIB_INTERNAL_H */
