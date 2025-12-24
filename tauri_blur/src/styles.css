@@ -1,0 +1,144 @@
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+.container {
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.info-box {
+  background: #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+  font-family: monospace;
+}
+
+.controls {
+  margin-bottom: 1rem;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.controls input[type="range"] {
+  width: 200px;
+}
+
+.controls input[type="text"] {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: monospace;
+  width: 120px;
+  text-align: center;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  margin: 0.25rem;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.primary {
+  background-color: #0066cc;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #0052a3;
+}
+
+.btn.success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn.success:hover {
+  background-color: #218838;
+}
+
+.btn.danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn.danger:hover {
+  background-color: #c82333;
+}
+
+.status-box {
+  background: #333;
+  color: #0f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-family: monospace;
+}
+
+.status-box p {
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f6f6f6;
+    background-color: #2f2f2f;
+  }
+
+  h1 {
+    color: #f6f6f6;
+  }
+
+  .info-box {
+    background: #444;
+  }
+
+  .controls input[type="text"] {
+    background: #444;
+    color: #fff;
+    border-color: #555;
+  }
+}
