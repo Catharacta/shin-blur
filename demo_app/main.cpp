@@ -1,10 +1,5 @@
 /*
- * Blur Demo Application
- * 
- * A simple Windows GUI app to test blur_lib functionality.
- * - Click on a window to select it
- * - Apply/Clear blur effects
- * - Adjust intensity and color
+ * Blur Demo Application - UI Polished Version
  */
 
 #include <windows.h>
@@ -68,474 +63,145 @@ void BLUR_CALL LogCallback(int32_t level, const char* msg, void* user_data) {
     AddLogMessage("%s%s", prefix, msg);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow) {
-    /* Initialize common controls */
-    INITCOMMONCONTROLSEX icex;
-    icex.dwSize = sizeof(icex);
-    icex.dwICC = ICC_BAR_CLASSES | ICC_STANDARD_CLASSES;
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    SetProcessDPIAware();
+    INITCOMMONCONTROLSEX icex = { sizeof(icex), ICC_BAR_CLASSES | ICC_STANDARD_CLASSES };
     InitCommonControlsEx(&icex);
 
-    /* Register window class */
-    WNDCLASSEXW wc = {};
-    wc.cbSize = sizeof(wc);
-    wc.lpfnWndProc = WndProc;
-    wc.hInstance = hInstance;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.lpszClassName = L"BlurDemoClass";
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    WNDCLASSEXW wc = { sizeof(wc), 0, WndProc, 0, 0, hInstance, LoadIcon(NULL, IDI_APPLICATION), LoadCursor(NULL, IDC_ARROW), (HBRUSH)(COLOR_WINDOW + 1), NULL, L"BlurDemoClass", NULL };
     RegisterClassExW(&wc);
 
-    /* Create main window */
-    g_hMainWnd = CreateWindowExW(
-        0, L"BlurDemoClass", L"Blur Library Demo",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 500, 600,
-        NULL, NULL, hInstance, NULL
-    );
+    /* Increased window size to 600x750 */
+    g_hMainWnd = CreateWindowExW(0, L"BlurDemoClass", L"Blur Library Demo", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 750, NULL, NULL, hInstance, NULL);
+    if (!g_hMainWnd) return 1;
 
-    if (!g_hMainWnd) {
-        MessageBoxW(NULL, L"Failed to create window", L"Error", MB_OK | MB_ICONERROR);
-        return 1;
-    }
+    ShowWindow(g_hMainWnd, nCmdShow); UpdateWindow(g_hMainWnd);
 
-    ShowWindow(g_hMainWnd, nCmdShow);
-    UpdateWindow(g_hMainWnd);
-
-    /* Message loop */
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
+    MSG msg; while (GetMessage(&msg, NULL, 0, 0)) { TranslateMessage(&msg); DispatchMessage(&msg); }
     return (int)msg.wParam;
 }
 
 void CreateControls(HWND hWnd) {
     HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-    int y = 10;
+    int y = 15;
+    int labelW = 120;
+    int controlX = 140;
+    int controlW = 420;
 
-    /* Capabilities label */
-    CreateWindowW(L"STATIC", L"Capabilities:", WS_CHILD | WS_VISIBLE,
-        10, y, 100, 20, hWnd, NULL, hInst, NULL);
-    g_hStaticCaps = CreateWindowW(L"STATIC", L"Initializing...",
-        WS_CHILD | WS_VISIBLE | SS_LEFT,
-        110, y, 370, 40, hWnd, (HMENU)ID_STATIC_CAPS, hInst, NULL);
-    y += 50;
+    CreateWindowW(L"STATIC", L"Capabilities:", WS_CHILD | WS_VISIBLE, 15, y, labelW, 25, hWnd, NULL, hInst, NULL);
+    g_hStaticCaps = CreateWindowW(L"STATIC", L"Initializing...", WS_CHILD | WS_VISIBLE | SS_LEFT, controlX, y, controlW, 45, hWnd, (HMENU)ID_STATIC_CAPS, hInst, NULL);
+    y += 55;
 
-    /* Target window info */
-    CreateWindowW(L"STATIC", L"Target HWND:", WS_CHILD | WS_VISIBLE,
-        10, y, 100, 20, hWnd, NULL, hInst, NULL);
-    g_hStaticHwnd = CreateWindowW(L"STATIC", L"(none)",
-        WS_CHILD | WS_VISIBLE | SS_LEFT,
-        110, y, 300, 20, hWnd, (HMENU)ID_STATIC_HWND, hInst, NULL);
-    y += 30;
-
-    /* Pick button */
-    CreateWindowW(L"BUTTON", L"Pick Window (Click)",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        10, y, 150, 30, hWnd, (HMENU)ID_BTN_PICK, hInst, NULL);
-    CreateWindowW(L"BUTTON", L"Create Test Windows",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        170, y, 160, 30, hWnd, (HMENU)ID_BTN_CREATE_TEST, hInst, NULL);
+    CreateWindowW(L"STATIC", L"Target HWND:", WS_CHILD | WS_VISIBLE, 15, y, labelW, 25, hWnd, NULL, hInst, NULL);
+    g_hStaticHwnd = CreateWindowW(L"STATIC", L"(none)", WS_CHILD | WS_VISIBLE | SS_LEFT, controlX, y, controlW, 25, hWnd, (HMENU)ID_STATIC_HWND, hInst, NULL);
     y += 40;
 
-    /* Intensity slider */
-    CreateWindowW(L"STATIC", L"Intensity:", WS_CHILD | WS_VISIBLE,
-        10, y, 80, 20, hWnd, NULL, hInst, NULL);
-    g_hSliderIntensity = CreateWindowW(TRACKBAR_CLASSW, L"",
-        WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_AUTOTICKS,
-        100, y, 300, 30, hWnd, (HMENU)ID_SLIDER_INTENSITY, hInst, NULL);
+    CreateWindowW(L"BUTTON", L"Pick Window (Click)", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 15, y, 180, 40, hWnd, (HMENU)ID_BTN_PICK, hInst, NULL);
+    CreateWindowW(L"BUTTON", L"Create Test Windows", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 210, y, 200, 40, hWnd, (HMENU)ID_BTN_CREATE_TEST, hInst, NULL);
+    y += 55;
+
+    CreateWindowW(L"STATIC", L"Intensity:", WS_CHILD | WS_VISIBLE, 15, y, labelW, 25, hWnd, NULL, hInst, NULL);
+    g_hSliderIntensity = CreateWindowW(TRACKBAR_CLASSW, L"", WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_AUTOTICKS, controlX, y, controlW, 40, hWnd, (HMENU)ID_SLIDER_INTENSITY, hInst, NULL);
     SendMessage(g_hSliderIntensity, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
     SendMessage(g_hSliderIntensity, TBM_SETPOS, TRUE, 100);
+    y += 55;
+
+    CreateWindowW(L"STATIC", L"Color (ARGB):", WS_CHILD | WS_VISIBLE, 15, y, labelW, 25, hWnd, NULL, hInst, NULL);
+    g_hEditColor = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"80000000", WS_CHILD | WS_VISIBLE | ES_LEFT, controlX, y, 150, 30, hWnd, (HMENU)ID_EDIT_COLOR, hInst, NULL);
+    y += 50;
+
+    CreateWindowW(L"BUTTON", L"Apply Blur", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 15, y, 120, 40, hWnd, (HMENU)ID_BTN_APPLY, hInst, NULL);
+    CreateWindowW(L"BUTTON", L"Clear Blur", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 145, y, 120, 40, hWnd, (HMENU)ID_BTN_CLEAR, hInst, NULL);
+    CreateWindowW(L"BUTTON", L"Restore All", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 275, y, 120, 40, hWnd, (HMENU)ID_BTN_RESTORE, hInst, NULL);
+    y += 60;
+
+    CreateWindowW(L"STATIC", L"Status:", WS_CHILD | WS_VISIBLE, 15, y, 70, 25, hWnd, NULL, hInst, NULL);
+    g_hStaticStatus = CreateWindowW(L"STATIC", L"Ready", WS_CHILD | WS_VISIBLE | SS_LEFT, 95, y, 460, 25, hWnd, (HMENU)ID_STATIC_STATUS, hInst, NULL);
     y += 40;
 
-    /* Color input */
-    CreateWindowW(L"STATIC", L"Color (ARGB):", WS_CHILD | WS_VISIBLE,
-        10, y, 90, 20, hWnd, NULL, hInst, NULL);
-    g_hEditColor = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"80000000",
-        WS_CHILD | WS_VISIBLE | ES_LEFT,
-        100, y, 120, 24, hWnd, (HMENU)ID_EDIT_COLOR, hInst, NULL);
-    y += 35;
-
-    /* Action buttons */
-    CreateWindowW(L"BUTTON", L"Apply Blur",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        10, y, 100, 30, hWnd, (HMENU)ID_BTN_APPLY, hInst, NULL);
-    CreateWindowW(L"BUTTON", L"Clear Blur",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        120, y, 100, 30, hWnd, (HMENU)ID_BTN_CLEAR, hInst, NULL);
-    CreateWindowW(L"BUTTON", L"Restore All",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        230, y, 100, 30, hWnd, (HMENU)ID_BTN_RESTORE, hInst, NULL);
-    y += 45;
-
-    /* Status */
-    CreateWindowW(L"STATIC", L"Status:", WS_CHILD | WS_VISIBLE,
-        10, y, 50, 20, hWnd, NULL, hInst, NULL);
-    g_hStaticStatus = CreateWindowW(L"STATIC", L"Ready",
-        WS_CHILD | WS_VISIBLE | SS_LEFT,
-        70, y, 400, 20, hWnd, (HMENU)ID_STATIC_STATUS, hInst, NULL);
+    CreateWindowW(L"STATIC", L"Log:", WS_CHILD | WS_VISIBLE, 15, y, 70, 25, hWnd, NULL, hInst, NULL);
     y += 30;
-
-    /* Log listbox */
-    CreateWindowW(L"STATIC", L"Log:", WS_CHILD | WS_VISIBLE,
-        10, y, 50, 20, hWnd, NULL, hInst, NULL);
-    y += 25;
-    g_hListLog = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
-        WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOINTEGRALHEIGHT,
-        10, y, 460, 200, hWnd, (HMENU)ID_LIST_LOG, hInst, NULL);
+    g_hListLog = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOINTEGRALHEIGHT, 15, y, 550, 250, hWnd, (HMENU)ID_LIST_LOG, hInst, NULL);
 }
 
 void InitializeLibrary() {
-    /* Set up logging */
-    blur_set_log_level(BLUR_LOG_DEBUG);
-    blur_set_log_callback(LogCallback, NULL);
-
-    /* Initialize */
-    int32_t result = blur_init(&g_capabilities);
-    
-    if (result == BLUR_SUCCESS) {
-        char caps[256];
-        snprintf(caps, sizeof(caps), "0x%04X - %s%s%s%s",
-            g_capabilities,
-            (g_capabilities & BLUR_CAP_SETWINDOWCOMPOSITION) ? "Composition " : "",
-            (g_capabilities & BLUR_CAP_DWM_BLUR) ? "DWM " : "",
-            (g_capabilities & BLUR_CAP_COLOR_CONTROL) ? "Color " : "",
-            (g_capabilities & BLUR_CAP_ANIMATION_CONTROL) ? "Animation" : ""
-        );
-        SetWindowTextA(g_hStaticCaps, caps);
-        AddLogMessage("Library initialized successfully");
-    } else {
-        SetWindowTextA(g_hStaticCaps, "FAILED");
-        AddLogMessage("Failed to initialize library: %d", result);
+    blur_set_log_level(BLUR_LOG_DEBUG); blur_set_log_callback(LogCallback, NULL);
+    if (blur_init(&g_capabilities) == BLUR_SUCCESS) {
+        char caps[256]; snprintf(caps, 256, "0x%04X - %s%s%s%s%s", g_capabilities, (g_capabilities&BLUR_CAP_SETWINDOWCOMPOSITION)?"Comp ":"", (g_capabilities&BLUR_CAP_DWM_BLUR)?"DWM ":"", (g_capabilities&BLUR_CAP_COLOR_CONTROL)?"Col ":"", (g_capabilities&BLUR_CAP_ANIMATION_CONTROL)?"Anim ":"", (g_capabilities&BLUR_CAP_D2D_BLUR)?"D2D":"");
+        SetWindowTextA(g_hStaticCaps, caps); AddLogMessage("Library initialized");
     }
 }
 
-LRESULT CALLBACK PickerProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode >= 0 && g_picking) {
-        MOUSEHOOKSTRUCT* pMouse = (MOUSEHOOKSTRUCT*)lParam;
-        
-        if (wParam == WM_LBUTTONDOWN) {
-            POINT pt = pMouse->pt;
-            HWND hwnd = WindowFromPoint(pt);
-            
-            /* Get top-level window */
-            HWND hwndRoot = GetAncestor(hwnd, GA_ROOT);
-            if (hwndRoot && hwndRoot != g_hMainWnd) {
-                g_hTargetWnd = hwndRoot;
-                UpdateTargetInfo();
-                AddLogMessage("Selected window: 0x%p", g_hTargetWnd);
-            }
-            
-            g_picking = false;
-            ReleaseCapture();
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
-            UnhookWindowsHookEx(g_hMouseHook);
-            g_hMouseHook = NULL;
-            UpdateStatus("Window selected");
-            return 1; /* Consume the click */
-        }
+LRESULT CALLBACK PickerProc(int n, WPARAM w, LPARAM l) {
+    if (n >= 0 && g_picking && w == WM_LBUTTONDOWN) {
+        HWND hr = GetAncestor(WindowFromPoint(((MOUSEHOOKSTRUCT*)l)->pt), GA_ROOT);
+        if (hr && hr != g_hMainWnd) { g_hTargetWnd = hr; UpdateTargetInfo(); AddLogMessage("Selected: 0x%p", hr); }
+        g_picking = false; ReleaseCapture(); UnhookWindowsHookEx(g_hMouseHook); g_hMouseHook = NULL; UpdateStatus("Window selected"); return 1;
     }
-    return CallNextHookEx(g_hMouseHook, nCode, wParam, lParam);
+    return CallNextHookEx(g_hMouseHook, n, w, l);
 }
 
-void StartPicking() {
-    g_picking = true;
-    SetCursor(LoadCursor(NULL, IDC_CROSS));
-    UpdateStatus("Click on a window to select...");
-    
-    g_hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, PickerProc, NULL, 0);
-}
-
+void StartPicking() { g_picking = true; SetCursor(LoadCursor(NULL, IDC_CROSS)); UpdateStatus("Click window..."); g_hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, PickerProc, NULL, 0); }
 void UpdateTargetInfo() {
-    if (g_hTargetWnd && IsWindow(g_hTargetWnd)) {
-        char title[256];
-        char info[512];
-        GetWindowTextA(g_hTargetWnd, title, sizeof(title));
-        snprintf(info, sizeof(info), "0x%p - %.200s", g_hTargetWnd, title);
-        SetWindowTextA(g_hStaticHwnd, info);
-    } else {
-        SetWindowTextA(g_hStaticHwnd, "(none)");
-    }
+    if (g_hTargetWnd && IsWindow(g_hTargetWnd)) { wchar_t t[256]; char i[512]; GetWindowTextW(g_hTargetWnd, t, 256); snprintf(i, 512, "0x%p - %ls", g_hTargetWnd, t); SetWindowTextA(g_hStaticHwnd, i); }
+    else SetWindowTextA(g_hStaticHwnd, "(none)");
 }
-
 void ApplyBlur() {
-    if (!g_hTargetWnd || !IsWindow(g_hTargetWnd)) {
-        UpdateStatus("No target window selected");
-        return;
-    }
-
-    /* Get intensity */
-    int intensity = (int)SendMessage(g_hSliderIntensity, TBM_GETPOS, 0, 0);
-    
-    /* Get color */
-    char colorText[32];
-    GetWindowTextA(g_hEditColor, colorText, sizeof(colorText));
-    uint32_t color = (uint32_t)strtoul(colorText, NULL, 16);
-
-    /* Build params */
-    EffectParams params = {};
-    params.struct_version = 1;
-    params.intensity = intensity / 100.0f;
-    params.color_argb = color;
-    params.animate = 0;
-
-    AddLogMessage("Applying blur: intensity=%.2f, color=0x%08X", params.intensity, params.color_argb);
-
-    int32_t result = blur_apply_to_window((uintptr_t)g_hTargetWnd, &params, 0);
-    
-    if (result == BLUR_SUCCESS) {
-        UpdateStatus("Blur applied successfully");
-    } else {
-        char* error = NULL;
-        blur_get_last_error(&error);
-        UpdateStatus(error ? error : "Apply failed");
-        if (error) blur_free_string(error);
-    }
+    if (!g_hTargetWnd) return; EffectParams p = { 1, (int)SendMessage(g_hSliderIntensity, TBM_GETPOS, 0, 0)/100.0f };
+    char ct[32]; GetWindowTextA(g_hEditColor, ct, 32); p.color_argb = (uint32_t)strtoul(ct, NULL, 16);
+    if (blur_apply_to_window((uintptr_t)g_hTargetWnd, &p, 0) == BLUR_SUCCESS) UpdateStatus("Applied");
 }
+void ClearBlur() { if (g_hTargetWnd && blur_clear_from_window((uintptr_t)g_hTargetWnd, 0) == BLUR_SUCCESS) UpdateStatus("Cleared"); }
+void RestoreAll() { blur_restore_all(); UpdateStatus("Restored All"); }
+void AddLogMessage(const char* f, ...) { char b[512]; va_list a; va_start(a, f); vsnprintf(b, 512, f, a); va_end(a); SendMessageA(g_hListLog, LB_ADDSTRING, 0, (LPARAM)b); SendMessage(g_hListLog, LB_SETTOPINDEX, (int)SendMessage(g_hListLog, LB_GETCOUNT, 0, 0)-1, 0); }
+void UpdateStatus(const char* s) { SetWindowTextA(g_hStaticStatus, s); }
 
-void ClearBlur() {
-    if (!g_hTargetWnd) {
-        UpdateStatus("No target window selected");
-        return;
-    }
-
-    AddLogMessage("Clearing blur from window 0x%p", g_hTargetWnd);
-
-    int32_t result = blur_clear_from_window((uintptr_t)g_hTargetWnd, 0);
-    
-    if (result == BLUR_SUCCESS) {
-        UpdateStatus("Blur cleared");
-    } else {
-        char* error = NULL;
-        blur_get_last_error(&error);
-        UpdateStatus(error ? error : "Clear failed");
-        if (error) blur_free_string(error);
-    }
-}
-
-void RestoreAll() {
-    AddLogMessage("Restoring all windows...");
-    int32_t result = blur_restore_all();
-    UpdateStatus(result == BLUR_SUCCESS ? "All restored" : "Restore failed");
-}
-
-void AddLogMessage(const char* format, ...) {
-    char buffer[512];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-
-    SendMessageA(g_hListLog, LB_ADDSTRING, 0, (LPARAM)buffer);
-    int count = (int)SendMessage(g_hListLog, LB_GETCOUNT, 0, 0);
-    SendMessage(g_hListLog, LB_SETTOPINDEX, count - 1, 0);
-}
-
-void UpdateStatus(const char* status) {
-    SetWindowTextA(g_hStaticStatus, status);
-}
-
-/* Background window proc - draws colorful pattern */
-LRESULT CALLBACK BackgroundWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    switch (msg) {
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            RECT rc;
-            GetClientRect(hWnd, &rc);
-            
-            /* Draw colorful checkerboard pattern */
-            int cellSize = 40;
-            COLORREF colors[] = {
-                RGB(255, 0, 0),     /* Red */
-                RGB(0, 255, 0),     /* Green */
-                RGB(0, 0, 255),     /* Blue */
-                RGB(255, 255, 0),   /* Yellow */
-                RGB(255, 0, 255),   /* Magenta */
-                RGB(0, 255, 255),   /* Cyan */
-                RGB(255, 128, 0),   /* Orange */
-                RGB(128, 0, 255),   /* Purple */
-            };
-            int numColors = sizeof(colors) / sizeof(colors[0]);
-            
-            for (int y = 0; y < rc.bottom; y += cellSize) {
-                for (int x = 0; x < rc.right; x += cellSize) {
-                    int colorIdx = ((x / cellSize) + (y / cellSize)) % numColors;
-                    HBRUSH hBrush = CreateSolidBrush(colors[colorIdx]);
-                    RECT cellRc = {x, y, x + cellSize, y + cellSize};
-                    FillRect(hdc, &cellRc, hBrush);
-                    DeleteObject(hBrush);
-                }
-            }
-            
-            EndPaint(hWnd, &ps);
-            return 0;
+LRESULT CALLBACK BackgroundWndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if (m == WM_PAINT) { PAINTSTRUCT ps; HDC hdc = BeginPaint(h, &ps); RECT rc; GetClientRect(h, &rc);
+        int cs = 40; COLORREF cls[] = { RGB(255,0,0), RGB(0,255,0), RGB(0,0,255), RGB(255,255,0), RGB(255,0,255), RGB(0,255,255), RGB(255,128,0), RGB(128,0,255) };
+        for (int y = 0; y < rc.bottom; y += cs) for (int x = 0; x < rc.right; x += cs) {
+            HBRUSH br = CreateSolidBrush(cls[((x/cs)+(y/cs))%8]); RECT cr = {x, y, x+cs, y+cs}; FillRect(hdc, &cr, br); DeleteObject(br);
         }
-        case WM_DESTROY:
-            g_hBackgroundWnd = NULL;
-            return 0;
+        EndPaint(h, &ps); return 0;
     }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
+    if (m == WM_NCHITTEST) return HTCAPTION;
+    return DefWindowProc(h, m, w, l);
 }
 
-/* Test window proc - transparent window for blur */
-LRESULT CALLBACK TestWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    switch (msg) {
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            RECT rc;
-            GetClientRect(hWnd, &rc);
-            
-            /* Draw semi-transparent background with text */
-            SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(255, 255, 255));
-            
-            const char* text = "Blur Test Window\n\nLook at the pattern behind!";
-            DrawTextA(hdc, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
-            
-            EndPaint(hWnd, &ps);
-            return 0;
-        }
-        case WM_DESTROY:
-            g_hTestWnd = NULL;
-            return 0;
+LRESULT CALLBACK TestWndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if (m == WM_PAINT) { PAINTSTRUCT ps; HDC hdc = BeginPaint(h, &ps); RECT rc; GetClientRect(h, &rc);
+        SetBkMode(hdc, TRANSPARENT); SetTextColor(hdc, RGB(255,255,255));
+        const char* t = "Blur Test Window\n\nDrag anywhere to move!"; DrawTextA(hdc, t, -1, &rc, DT_CENTER|DT_VCENTER|DT_WORDBREAK);
+        EndPaint(h, &ps); return 0;
     }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
+    if (m == WM_NCHITTEST) return HTCAPTION;
+    return DefWindowProc(h, m, w, l);
 }
 
-void DestroyTestWindows() {
-    if (g_hTestWnd && IsWindow(g_hTestWnd)) {
-        DestroyWindow(g_hTestWnd);
-        g_hTestWnd = NULL;
-    }
-    if (g_hBackgroundWnd && IsWindow(g_hBackgroundWnd)) {
-        DestroyWindow(g_hBackgroundWnd);
-        g_hBackgroundWnd = NULL;
-    }
-}
+void DestroyTestWindows() { if (g_hTestWnd) DestroyWindow(g_hTestWnd); if (g_hBackgroundWnd) DestroyWindow(g_hBackgroundWnd); g_hTestWnd = g_hBackgroundWnd = NULL; }
 
 void CreateTestWindows() {
-    DestroyTestWindows();
-    
-    HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(g_hMainWnd, GWLP_HINSTANCE);
-    
-    /* Register background window class */
-    static bool bgClassRegistered = false;
-    if (!bgClassRegistered) {
-        WNDCLASSEXW wc = {};
-        wc.cbSize = sizeof(wc);
-        wc.lpfnWndProc = BackgroundWndProc;
-        wc.hInstance = hInst;
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.lpszClassName = L"BlurBackgroundClass";
-        RegisterClassExW(&wc);
-        bgClassRegistered = true;
-    }
-    
-    /* Register test window class */
-    static bool testClassRegistered = false;
-    if (!testClassRegistered) {
-        WNDCLASSEXW wc = {};
-        wc.cbSize = sizeof(wc);
-        wc.lpfnWndProc = TestWndProc;
-        wc.hInstance = hInst;
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-        wc.lpszClassName = L"BlurTestClass";
-        RegisterClassExW(&wc);
-        testClassRegistered = true;
-    }
-    
-    /* Get screen center */
-    int screenW = GetSystemMetrics(SM_CXSCREEN);
-    int screenH = GetSystemMetrics(SM_CYSCREEN);
-    int winW = 400;
-    int winH = 300;
-    int posX = (screenW - winW) / 2;
-    int posY = (screenH - winH) / 2;
-    
-    /* Create background window */
-    g_hBackgroundWnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW,
-        L"BlurBackgroundClass",
-        L"Background (Colorful Pattern)",
-        WS_POPUP | WS_VISIBLE | WS_CAPTION,
-        posX, posY, winW, winH,
-        NULL, NULL, hInst, NULL
-    );
-    
-    /* Create test window on top of background */
-    g_hTestWnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW,
-        L"BlurTestClass",
-        L"Blur Test Window",
-        WS_POPUP | WS_VISIBLE | WS_CAPTION,
-        posX + 50, posY + 50, winW - 100, winH - 100,
-        NULL, NULL, hInst, NULL
-    );
+    DestroyTestWindows(); HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(g_hMainWnd, GWLP_HINSTANCE);
+    WNDCLASSEXW wbg = { sizeof(wbg), 0, BackgroundWndProc, 0, 0, hInst, LoadIcon(NULL, IDI_APPLICATION), LoadCursor(NULL, IDC_ARROW), NULL, NULL, L"BlurBg", NULL };
+    RegisterClassExW(&wbg);
+    WNDCLASSEXW wts = { sizeof(wts), 0, TestWndProc, 0, 0, hInst, LoadIcon(NULL, IDI_APPLICATION), LoadCursor(NULL, IDC_ARROW), (HBRUSH)GetStockObject(BLACK_BRUSH), NULL, L"BlurTs", NULL };
+    RegisterClassExW(&wts);
+
+    int sw = GetSystemMetrics(SM_CXSCREEN), sh = GetSystemMetrics(SM_CYSCREEN), ww = 600, wh = 450, px = (sw - ww) / 2, py = (sh - wh) / 2;
+    g_hBackgroundWnd = CreateWindowExW(0, L"BlurBg", L"Bg", WS_POPUP | WS_VISIBLE, px, py, ww, wh, NULL, NULL, hInst, NULL);
+    g_hTestWnd = CreateWindowExW(WS_EX_TOPMOST, L"BlurTs", L"Blur", WS_POPUP | WS_VISIBLE, px + 50, py + 50, ww - 100, wh - 100, NULL, NULL, hInst, NULL);
     
     if (g_hTestWnd) {
-        /* Set as target */
-        g_hTargetWnd = g_hTestWnd;
-        UpdateTargetInfo();
-        
-        /* Apply blur with default params */
-        EffectParams params = {};
-        params.struct_version = 1;
-        params.intensity = 1.0f;
-        params.color_argb = 0x60000000;
-        
-        int32_t result = blur_apply_to_window((uintptr_t)g_hTestWnd, &params, 0);
-        if (result == BLUR_SUCCESS) {
-            AddLogMessage("Test windows created and blur applied");
-            UpdateStatus("Look at the background pattern through the blur window!");
-        } else {
-            AddLogMessage("Test windows created, blur failed");
-            UpdateStatus("Blur failed - check log");
-        }
+        g_hTargetWnd = g_hTestWnd; UpdateTargetInfo();
+        EffectParams p = { 1, 1.0f, 0x60000000 }; blur_apply_to_window((uintptr_t)g_hTestWnd, &p, 0);
     }
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    switch (msg) {
-        case WM_CREATE:
-            CreateControls(hWnd);
-            InitializeLibrary();
-            return 0;
-
-        case WM_COMMAND:
-            switch (LOWORD(wParam)) {
-                case ID_BTN_PICK:
-                    StartPicking();
-                    break;
-                case ID_BTN_APPLY:
-                    ApplyBlur();
-                    break;
-                case ID_BTN_CLEAR:
-                    ClearBlur();
-                    break;
-                case ID_BTN_RESTORE:
-                    RestoreAll();
-                    break;
-                case ID_BTN_CREATE_TEST:
-                    CreateTestWindows();
-                    break;
-            }
-            return 0;
-
-        case WM_DESTROY:
-            DestroyTestWindows();
-            blur_shutdown();
-            if (g_hMouseHook) {
-                UnhookWindowsHookEx(g_hMouseHook);
-            }
-            PostQuitMessage(0);
-            return 0;
+LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    switch (m) {
+        case WM_CREATE: CreateControls(h); InitializeLibrary(); break;
+        case WM_COMMAND: switch (LOWORD(w)) { case ID_BTN_PICK: StartPicking(); break; case ID_BTN_APPLY: ApplyBlur(); break; case ID_BTN_CLEAR: ClearBlur(); break; case ID_BTN_RESTORE: RestoreAll(); break; case ID_BTN_CREATE_TEST: CreateTestWindows(); break; } break;
+        case WM_DESTROY: DestroyTestWindows(); blur_shutdown(); PostQuitMessage(0); break;
     }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
+    return DefWindowProc(h, m, w, l);
 }

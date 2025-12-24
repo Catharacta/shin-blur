@@ -14,9 +14,11 @@ set(BLUR_LIB_SOURCES
     src/blur_lib.cpp
     src/composition.cpp
     src/dwm_fallback.cpp
+    src/d2d_blur.cpp
     src/error.cpp
     src/logging.cpp
     src/window_tracker.cpp
+
 )
 
 # Header files
@@ -44,6 +46,10 @@ if(WIN32)
     target_link_libraries(blur_lib PRIVATE
         user32
         dwmapi
+        d2d1
+        d3d11
+        dxgi
+        windowscodecs
     )
 endif()
 
