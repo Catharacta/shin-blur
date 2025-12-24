@@ -14,7 +14,10 @@ pub const BLUR_ALREADY_APPLIED: i32 = 9;
 /// Capability bits
 pub const BLUR_CAP_SETWINDOWCOMPOSITION: u32 = 0x0001;
 pub const BLUR_CAP_DWM_BLUR: u32 = 0x0002;
+pub const BLUR_CAP_OVERLAY_FALLBACK: u32 = 0x0004;
 pub const BLUR_CAP_COLOR_CONTROL: u32 = 0x0008;
+pub const BLUR_CAP_ANIMATION_CONTROL: u32 = 0x0010;
+pub const BLUR_CAP_D2D_BLUR: u32 = 0x0020;
 
 /// EffectParams structure matching C definition
 #[repr(C, packed)]
@@ -91,7 +94,7 @@ pub fn apply_blur(hwnd: usize, intensity: f32, color: u32) -> Result<(), String>
         color_argb: color,
         ..Default::default()
     };
-    
+
     unsafe {
         let result = blur_apply_to_window(hwnd, &params, 0);
         if result == BLUR_SUCCESS {

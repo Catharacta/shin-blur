@@ -1,73 +1,73 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
-let statusEl: HTMLElement | null;
-let versionEl: HTMLElement | null;
-let capsEl: HTMLElement | null;
-let intensitySlider: HTMLInputElement | null;
-let colorInput: HTMLInputElement | null;
-
-async function initBlur() {
-  try {
-    const caps = await invoke<number>("blur_init_lib");
-    if (capsEl) {
-      capsEl.textContent = `Capabilities: 0x${caps.toString(16).padStart(4, '0')}`;
-    }
-    updateStatus("Library initialized");
-    
-    // Get version
-    const version = await invoke<string>("get_blur_version");
-    if (versionEl) {
-      versionEl.textContent = `blur_lib v${version}`;
-    }
-  } catch (e) {
-    updateStatus(`Error: ${e}`);
-  }
-}
-
-async function applyBlur() {
-  const intensity = intensitySlider ? parseFloat(intensitySlider.value) / 100 : 1.0;
-  const colorHex = colorInput?.value || "80000000";
-  const color = parseInt(colorHex, 16);
-  
-  try {
-    await invoke("apply_blur", { intensity, color });
-    updateStatus("Blur applied!");
-  } catch (e) {
-    updateStatus(`Error: ${e}`);
-  }
-}
-
-async function clearBlur() {
-  try {
-    await invoke("clear_blur");
-    updateStatus("Blur cleared");
-  } catch (e) {
-    updateStatus(`Error: ${e}`);
-  }
-}
-
-function updateStatus(msg: string) {
-  if (statusEl) {
-    statusEl.textContent = msg;
-  }
-}
+const appWindow = getCurrentWindow();
 
 window.addEventListener("DOMContentLoaded", () => {
-  statusEl = document.querySelector("#status");
-  versionEl = document.querySelector("#version");
-  capsEl = document.querySelector("#caps");
-  intensitySlider = document.querySelector("#intensity");
-  colorInput = document.querySelector("#color");
-  
-  document.querySelector("#init-btn")?.addEventListener("click", initBlur);
-  document.querySelector("#apply-btn")?.addEventListener("click", applyBlur);
-  document.querySelector("#clear-btn")?.addEventListener("click", clearBlur);
-  
-  // Update intensity label
-  intensitySlider?.addEventListener("input", () => {
-    const label = document.querySelector("#intensity-label");
-    if (label && intensitySlider) {
-      label.textContent = `${intensitySlider.value}%`;
+  const versionEl = document.getElementById("version");
+  const capsEl = document.getElementById("caps");
+  const statusEl = document.getElementById("status");
+  const intensityInput = document.getElementById("intensity") as HTMLInputElement;
+  const intensityLabel = document.getElementById("intensity-label");
+  const colorInput = document.getElementById("color") as HTMLInputElement;
+  const initBtn = document.getElementById("init-btn");
+  const applyBtn = document.getElementById("apply-btn");
+  const clearBtn = document.getElementById("clear-btn");
+  const closeBtn = document.getElementById("close-btn");
+
+  if (!versionEl || !capsEl || !statusEl || !intensityInput || !intensityLabel || !colorInput || !initBtn || !applyBtn || !clearBtn || !closeBtn) {
+    return;
+  }
+
+  // Close app
+  closeBtn.addEventListener("click", () => {
+    appWindow.close();
+  });
+
+  // Update labels
+  intensityInput.addEventListener("input", () => {
+    intensityLabel.textContent = `${intensityInput.value}%`;
+  });
+
+  // Init Library
+  initBtn.addEventListener("click", async () => {
+    try {
+      statusEl.textContent = "Initializing...";
+      const caps = await invoke<number>("blur_init_lib");
+      const version = await invoke<string>("get_blur_version");
+
+      versionEl.textContent = version;
+      capsEl.textContent = `0x${caps.toString(16).toUpperCase()}`;
+      statusEl.textContent = "Library Initialized";
+      initBtn.setAttribute("disabled", "true");
+    } catch (e) {
+      statusEl.textContent = `Error: ${e}`;
+    }
+  });
+
+  // Apply Blur
+  applyBtn.addEventListener("click", async () => {
+    try {
+      const intensity = parseFloat(intensityInput.value) / 100.0;
+      const colorText = colorInput.value;
+      const color = parseInt(colorText, 16);
+
+      statusEl.textContent = "Applying Blur...";
+      await invoke("apply_blur", { intensity, color });
+      statusEl.textContent = "Blur Applied";
+    } catch (e) {
+      statusEl.textContent = `Error: ${e}`;
+    }
+  });
+
+  // Clear Blur
+  clearBtn.addEventListener("click", async () => {
+    try {
+      statusEl.textContent = "Clearing Blur...";
+      await invoke("clear_blur");
+      statusEl.textContent = "Blur Cleared";
+    } catch (e) {
+      statusEl.textContent = `Error: ${e}`;
     }
   });
 });

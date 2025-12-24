@@ -14,8 +14,11 @@
     "windows": [
       {
         "title": "Blur Library Test",
-        "width": 400,
-        "height": 500
+        "width": 500,
+        "height": 600,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false
       }
     ],
     "security": {
