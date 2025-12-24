@@ -24,41 +24,26 @@ int32_t apply_composition_blur(HWND hwnd, const EffectParams* params,
         LOG_DEBUG("Extended frame into client area");
     }
     
-    /* Step 2: Try Windows 11 Mica/Acrylic (Build 22000+) */
-    #ifndef DWMWA_SYSTEMBACKDROP_TYPE
-    #define DWMWA_SYSTEMBACKDROP_TYPE 38
-    #endif
-    const int DWMSBT_TRANSIENTWINDOW = 3; /* Acrylic */
-    const int DWMSBT_MAINWINDOW = 2;      /* Mica */
-    
-    int backdropType = (params->intensity >= 0.5f) ? DWMSBT_TRANSIENTWINDOW : DWMSBT_MAINWINDOW;
-    hr = DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
-    if (SUCCEEDED(hr)) {
-        LOG_DEBUG("Applied Windows 11 backdrop type: %d", backdropType);
-        /* Windows 11 backdrop applied, but still apply composition for color tint */
-    }
-    
-    /* Step 2: Apply accent policy */
+    /* Step 2: Apply accent policy with user-specified color */
     ACCENT_POLICY accent = {};
     
-    /* Choose accent state based on intensity */
-    if (params->intensity >= 0.5f) {
-        /* Use acrylic blur for higher intensity */
-        accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-    } else {
-        /* Use regular blur for lower intensity */
-        accent.AccentState = ACCENT_ENABLE_BLURBEHIND;
-    }
+    /* Use ACRYLICBLURBEHIND which supports custom color */
+    accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
     
-    /* Apply color if specified */
+    /* Apply user-specified color (ARGB format) */
+    /* The alpha channel controls the tint opacity */
     if (params->color_argb != 0) {
         accent.GradientColor = params->color_argb;
-        accent.AccentFlags = 2; /* Flag to enable gradient color */
     } else {
-        /* Default semi-transparent dark tint */
-        accent.GradientColor = 0x99000000;
-        accent.AccentFlags = 2;
+        /* Default: semi-transparent based on intensity */
+        /* Alpha = intensity * 200 (0-200 range for visibility) */
+        uint8_t alpha = (uint8_t)(params->intensity * 200);
+        accent.GradientColor = (alpha << 24) | 0x000000; /* Black with variable alpha */
     }
+    accent.AccentFlags = 2; /* Enable gradient color */
+    
+    LOG_DEBUG("Applying blur with GradientColor=0x%08X (intensity=%.2f)", 
+              accent.GradientColor, params->intensity);
     
     WINDOWCOMPOSITIONATTRIBDATA data = {};
     data.Attrib = WCA_ACCENT_POLICY;
@@ -85,6 +70,7 @@ int32_t clear_composition_blur(HWND hwnd, SetWindowCompositionAttributeFunc pFun
         return BLUR_API_UNSUPPORTED;
     }
     
+    /* Step 1: Reset accent policy */
     ACCENT_POLICY accent = {};
     accent.AccentState = ACCENT_DISABLED;
     accent.GradientColor = 0;
@@ -104,6 +90,10 @@ int32_t clear_composition_blur(HWND hwnd, SetWindowCompositionAttributeFunc pFun
         return BLUR_INTERNAL_ERROR;
     }
     
-    LOG_DEBUG("Cleared composition blur");
+    /* Step 2: Reset DWM frame extension */
+    MARGINS margins = {0, 0, 0, 0};
+    DwmExtendFrameIntoClientArea(hwnd, &margins);
+    
+    LOG_DEBUG("Cleared composition blur and reset DWM frame");
     return BLUR_SUCCESS;
 }
