@@ -108,10 +108,10 @@ int32_t BLUR_CALL blur_apply_to_window(
         return BLUR_INVALID_HANDLE;
     }
     
-    /* Check if already applied */
+    /* Check if already applied - if so, clear first to allow re-apply with new params */
     if (is_blur_applied(hwnd)) {
-        set_last_error("Blur already applied to this window");
-        return BLUR_ALREADY_APPLIED;
+        LOG_DEBUG("Blur already applied, clearing first to update params");
+        untrack_window(hwnd);
     }
     
     /* Use default params if not provided */
