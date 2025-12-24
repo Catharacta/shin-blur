@@ -1,0 +1,19 @@
+// Resource file for demo app
+#include <windows.h>
+
+// Version info
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "Blur Library Demo"
+            VALUE "FileVersion", "1.0.0"
+            VALUE "ProductName", "blur_demo"
+            VALUE "ProductVersion", "1.0.0"
+        END
+    END
+END
